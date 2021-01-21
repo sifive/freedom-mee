@@ -31,6 +31,38 @@
 #define METAL_HPM_EVENTID_29 (1UL << 29)
 #define METAL_HPM_EVENTID_30 (1UL << 30)
 #define METAL_HPM_EVENTID_31 (1UL << 31)
+#define METAL_HPM_EVENTID_32 (1UL << 32)
+#define METAL_HPM_EVENTID_33 (1UL << 33)
+#define METAL_HPM_EVENTID_34 (1UL << 34)
+#define METAL_HPM_EVENTID_35 (1UL << 35)
+#define METAL_HPM_EVENTID_36 (1UL << 36)
+#define METAL_HPM_EVENTID_37 (1UL << 37)
+#define METAL_HPM_EVENTID_38 (1UL << 38)
+#define METAL_HPM_EVENTID_39 (1UL << 39)
+#define METAL_HPM_EVENTID_40 (1UL << 40)
+#define METAL_HPM_EVENTID_41 (1UL << 41)
+#define METAL_HPM_EVENTID_42 (1UL << 42)
+#define METAL_HPM_EVENTID_43 (1UL << 43)
+#define METAL_HPM_EVENTID_44 (1UL << 44)
+#define METAL_HPM_EVENTID_45 (1UL << 45)
+#define METAL_HPM_EVENTID_46 (1UL << 46)
+#define METAL_HPM_EVENTID_47 (1UL << 47)
+#define METAL_HPM_EVENTID_48 (1UL << 48)
+#define METAL_HPM_EVENTID_49 (1UL << 49)
+#define METAL_HPM_EVENTID_50 (1UL << 50)
+#define METAL_HPM_EVENTID_51 (1UL << 51)
+#define METAL_HPM_EVENTID_52 (1UL << 52)
+#define METAL_HPM_EVENTID_53 (1UL << 53)
+#define METAL_HPM_EVENTID_54 (1UL << 54)
+#define METAL_HPM_EVENTID_55 (1UL << 55)
+#define METAL_HPM_EVENTID_56 (1UL << 56)
+#define METAL_HPM_EVENTID_57 (1UL << 57)
+#define METAL_HPM_EVENTID_58 (1UL << 58)
+#define METAL_HPM_EVENTID_59 (1UL << 59)
+#define METAL_HPM_EVENTID_60 (1UL << 60)
+#define METAL_HPM_EVENTID_61 (1UL << 61)
+#define METAL_HPM_EVENTID_62 (1UL << 62)
+#define METAL_HPM_EVENTID_63 (1UL << 63)
 
 /*! @brief Macros for valid Event Class */
 #define METAL_HPM_EVENTCLASS_0 (0UL)
@@ -42,6 +74,10 @@
 #define METAL_HPM_EVENTCLASS_6 (6UL)
 #define METAL_HPM_EVENTCLASS_7 (7UL)
 #define METAL_HPM_EVENTCLASS_8 (8UL)
+
+/* Return codes */
+#define METAL_HPM_RET_OK 0
+#define METAL_HPM_RET_NOK -1
 
 /*! @brief Enums for available HPM counters */
 typedef enum {
@@ -84,13 +120,18 @@ typedef enum {
  * @return 0 If no error.*/
 int metal_hpm_init(struct metal_cpu *cpu);
 
+/*! @brief Get count of supported hardware performance monitor counters.
+ * @param cpu The CPU device handle.
+ * @return Number of supported HPM counters.*/
+unsigned int metal_hpm_get_count(struct metal_cpu *cpu);
+
 /*! @brief Disables hardware performance monitor counters.
  *         Note - Disabled HPM counters may reduce power consumption.
  * @param cpu The CPU device handle.
  * @return 0 If no error.*/
 int metal_hpm_disable(struct metal_cpu *cpu);
 
-/*! @brief Set events which will cause the specified counter to increment.
+/*! @brief Set bits in event selector register as specified in the bit-mask.
  *         Counter will start incrementing from the moment events are set.
  * @param cpu The CPU device handle.
  * @param counter Hardware counter to be incremented by selected events.
@@ -100,21 +141,37 @@ int metal_hpm_disable(struct metal_cpu *cpu);
  *                [XLEN-1:8] - Event selection mask [7:0] - Event class
  * @return 0 If no error.*/
 int metal_hpm_set_event(struct metal_cpu *cpu, metal_hpm_counter counter,
-                        unsigned int bitmask);
+                        metal_cpureg_t bitmask);
 
-/*! @brief Get events selection mask set for specified counter.
+/*! @brief Writes specified value into event selector register.
+ *         Counter will start incrementing from the moment events are set.
+ * @param cpu The CPU device handle.
+ * @param counter Hardware counter to be incremented by selected events.
+ * @param regval Bit pattern to select events for a particular counter,
+ *                refer core reference manual for selection of events.
+ *                Event bit mask is partitioned as follows:
+ *                [XLEN-1:8] - Event selection mask [7:0] - Event class
+ * @return 0 If no error.*/
+int metal_hpm_assign_event(struct metal_cpu *cpu, metal_hpm_counter counter,
+                           metal_cpureg_t regval);
+
+/*! @brief Get events selection bit-mask set for specified counter.
  * @param cpu The CPU device handle.
  * @param counter Hardware counter.
- * @return Event selection bit mask. refer core reference manual for details.*/
-unsigned int metal_hpm_get_event(struct metal_cpu *cpu,
-                                 metal_hpm_counter counter);
+ * @param bitmask Event selection bit mask.
+ *                refer core reference manual for details.
+ * @return 0 If no error.*/
+int metal_hpm_get_event(struct metal_cpu *cpu, metal_hpm_counter counter,
+                        metal_cpureg_t *bitmask);
 
 /*! @brief Clear event selector bits as per specified bit-mask.
  * @param cpu The CPU device handle.
  * @param counter Hardware counter.
+ * @param bitmask Event selection bit mask.
+ *                refer core reference manual for details.
  * @return 0 If no error.*/
 int metal_hpm_clr_event(struct metal_cpu *cpu, metal_hpm_counter counter,
-                        unsigned int bitmask);
+                        metal_cpureg_t bitmask);
 
 /*! @brief Enable counter access to next lower privilege mode.
  * @param cpu The CPU device handle.

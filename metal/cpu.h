@@ -15,6 +15,15 @@
 struct metal_cpu;
 
 /*!
+ * @brief Typedef for CPU register-size datatype.
+ */
+#if __riscv_xlen == 32
+typedef uint32_t metal_cpureg_t;
+#else
+typedef uint64_t metal_cpureg_t;
+#endif
+
+/*!
  * @brief Function signature for exception handlers
  */
 typedef void (*metal_exception_handler_t)(struct metal_cpu *cpu, int ecode);

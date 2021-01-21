@@ -20,6 +20,12 @@
         __asm__ __volatile__("csrw mhpmevent" #x ", %0" : : "r"(val));         \
         break;
 
+/* Macro to assign values into event selector register */
+#define METAL_HPM_ASSIGN_EVENT_REG(x)                                          \
+    case METAL_HPM_COUNTER_##x:                                                \
+        __asm__ __volatile__("csrw mhpmevent" #x ", %0" : : "r"(regval));      \
+        break;
+
 /* Macro to set values into event selector register */
 #define METAL_HPM_CLR_EVENT_REG(x)                                             \
     case METAL_HPM_COUNTER_##x:                                                \
@@ -72,25 +78,21 @@
 /* Macro to check for instruction trap */
 #define MCAUSE_ILLEGAL_INST 0x02
 
-/* Return codes */
-#define METAL_HPM_RET_OK 0
-#define METAL_HPM_RET_NOK 1
-
 int metal_hpm_init(struct metal_cpu *gcpu) {
     struct __metal_driver_cpu *cpu = (void *)gcpu;
 
     /* Check if counters are initialized or pointer is NULL */
     if ((gcpu) && (cpu->hpm_count == 0)) {
         metal_hpm_counter n;
-
+        metal_cpureg_t bitmask;
         /* Count number of available hardware performance counters */
         cpu->hpm_count = METAL_HPM_COUNT_MAX;
 
         /* mcycle, mtime and minstret counters are always available */
         for (n = METAL_HPM_COUNTER_3; n < METAL_HPM_COUNTER_31; n++) {
             metal_hpm_set_event(gcpu, n, 0xFFFFFFFF);
-
-            if (metal_hpm_get_event(gcpu, n) == 0) {
+            metal_hpm_get_event(gcpu, n, &bitmask);
+            if (bitmask == 0) {
                 break;
             }
         }
@@ -115,9 +117,15 @@ int metal_hpm_init(struct metal_cpu *gcpu) {
     return METAL_HPM_RET_OK;
 }
 
+unsigned int metal_hpm_get_count(struct metal_cpu *gcpu) {
+    struct __metal_driver_cpu *cpu = (void *)gcpu;
+    /* Return Number of supported HPM counters */
+    return cpu->hpm_count;
+}
+
 int metal_hpm_disable(struct metal_cpu *gcpu) {
     struct __metal_driver_cpu *cpu = (void *)gcpu;
-    uintptr_t temp = 0, val = 0;
+    metal_cpureg_t temp = 0, val = 0;
 
     /* Check if pointer is NULL */
     if (gcpu) {
@@ -143,9 +151,9 @@ int metal_hpm_disable(struct metal_cpu *gcpu) {
 }
 
 int metal_hpm_set_event(struct metal_cpu *gcpu, metal_hpm_counter counter,
-                        unsigned int bitmask) {
+                        metal_cpureg_t bitmask) {
     struct __metal_driver_cpu *cpu = (void *)gcpu;
-    unsigned int val;
+    metal_cpureg_t val;
 
     /* Return error if counter is out of range or pointer is NULL */
     if ((gcpu) && (counter >= cpu->hpm_count))
@@ -162,13 +170,32 @@ int metal_hpm_set_event(struct metal_cpu *gcpu, metal_hpm_counter counter,
     return METAL_HPM_RET_OK;
 }
 
-unsigned int metal_hpm_get_event(struct metal_cpu *gcpu,
-                                 metal_hpm_counter counter) {
+int metal_hpm_assign_event(struct metal_cpu *gcpu, metal_hpm_counter counter,
+                           metal_cpureg_t regval) {
     struct __metal_driver_cpu *cpu = (void *)gcpu;
-    unsigned int val = 0;
 
     /* Return error if counter is out of range or pointer is NULL */
     if ((gcpu) && (counter >= cpu->hpm_count))
+        return METAL_HPM_RET_NOK;
+
+    switch (counter) {
+        /* Assign event register bit mask as requested */
+        METAL_HPM_HANDLE_SWITCH(METAL_HPM_ASSIGN_EVENT_REG)
+
+    default:
+        break;
+    }
+
+    return METAL_HPM_RET_OK;
+}
+
+int metal_hpm_get_event(struct metal_cpu *gcpu, metal_hpm_counter counter,
+                        metal_cpureg_t *bitmask) {
+    struct __metal_driver_cpu *cpu = (void *)gcpu;
+    metal_cpureg_t val = 0;
+
+    /* Return error if counter is out of range or pointer is NULL */
+    if ((gcpu) && (bitmask) && (counter >= cpu->hpm_count))
         return METAL_HPM_RET_NOK;
 
     switch (counter) {
@@ -178,14 +205,15 @@ unsigned int metal_hpm_get_event(struct metal_cpu *gcpu,
     default:
         break;
     }
+    *bitmask = val;
 
-    return val;
+    return METAL_HPM_RET_OK;
 }
 
 int metal_hpm_clr_event(struct metal_cpu *gcpu, metal_hpm_counter counter,
-                        unsigned int bitmask) {
+                        metal_cpureg_t bitmask) {
     struct __metal_driver_cpu *cpu = (void *)gcpu;
-    unsigned int val;
+    metal_cpureg_t val = 0;
 
     /* Return error if counter is out of range or pointer is NULL */
     if ((gcpu) && (counter >= cpu->hpm_count))
@@ -204,7 +232,7 @@ int metal_hpm_clr_event(struct metal_cpu *gcpu, metal_hpm_counter counter,
 
 int metal_hpm_enable_access(struct metal_cpu *gcpu, metal_hpm_counter counter) {
     struct __metal_driver_cpu *cpu = (void *)gcpu;
-    uintptr_t temp = 0, val = 0;
+    metal_cpureg_t temp = 0, val = 0;
 
     /* Return error if counter is out of range or pointer is NULL */
     if ((gcpu) && (counter >= cpu->hpm_count))
@@ -229,7 +257,7 @@ int metal_hpm_enable_access(struct metal_cpu *gcpu, metal_hpm_counter counter) {
 int metal_hpm_disable_access(struct metal_cpu *gcpu,
                              metal_hpm_counter counter) {
     struct __metal_driver_cpu *cpu = (void *)gcpu;
-    uintptr_t temp = 0, val = 0;
+    metal_cpureg_t temp = 0, val = 0;
 
     /* Return error if counter is out of range or pointer is NULL */
     if ((gcpu) && (counter >= cpu->hpm_count))
@@ -262,7 +290,7 @@ unsigned long long metal_hpm_read_counter(struct metal_cpu *gcpu,
 
     /* Return error if counter is out of range or pointer is NULL */
     if ((gcpu) && (counter >= cpu->hpm_count))
-        return METAL_HPM_RET_NOK;
+        return 0;
 
     switch (counter) {
     case METAL_HPM_CYCLE:
