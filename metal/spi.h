@@ -37,6 +37,8 @@ struct metal_spi_config {
 
 struct metal_spi_vtable {
     void (*init)(struct metal_spi *spi, int baud_rate);
+    struct metal_interrupt *(*controller_interrupt)(struct metal_spi *spi);
+    int (*get_interrupt_id)(struct metal_spi *spi);
     int (*transfer)(struct metal_spi *spi, struct metal_spi_config *config,
                     size_t len, char *tx_buf, char *rx_buf);
     int (*get_baud_rate)(struct metal_spi *spi);
@@ -90,6 +92,15 @@ __inline__ int metal_spi_get_baud_rate(struct metal_spi *spi) {
  * @param baud_rate The desired baud rate of the SPI device
  * @return 0 if the baud rate is successfully changed
  */
+  
+__inline__ struct metal_interrupt *
+metal_spi_interrupt_controller(struct metal_spi *spi) {
+    return spi->vtable->controller_interrupt(spi);
+}
+
+__inline__ int metal_spi_get_interrupt_id(struct metal_spi *spi) {
+    return spi->vtable->get_interrupt_id(spi);
+}
 __inline__ int metal_spi_set_baud_rate(struct metal_spi *spi, int baud_rate) {
     return spi->vtable->set_baud_rate(spi, baud_rate);
 }

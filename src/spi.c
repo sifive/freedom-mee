@@ -12,6 +12,11 @@ extern __inline__ int metal_spi_transfer(struct metal_spi *spi,
 extern __inline__ int metal_spi_get_baud_rate(struct metal_spi *spi);
 extern __inline__ int metal_spi_set_baud_rate(struct metal_spi *spi,
                                               int baud_rate);
+extern __inline__ struct metal_interrupt *
+metal_spi_interrupt_controller(struct metal_spi *spi);
+extern __inline__ int metal_spi_get_interrupt_id(struct metal_spi *spi);
+extern __inline__ int
+metal_spi_transmit_interrupt_enable(struct metal_spi *spi);
 
 struct metal_spi *metal_spi_get_device(unsigned int device_num) {
 #if __METAL_DT_MAX_SPIS > 0

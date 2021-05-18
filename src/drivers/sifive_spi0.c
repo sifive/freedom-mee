@@ -331,6 +331,17 @@ int __metal_driver_sifive_spi0_get_baud_rate(struct metal_spi *gspi) {
     return spi->baud_rate;
 }
 
+
+struct metal_interrupt *
+__metal_driver_sifive_spi0_interrupt_controller(struct metal_spi *spi) {
+    return __metal_driver_sifive_spi0_interrupt_parent(spi);
+}
+
+
+int __metal_driver_sifive_spi0_get_interrupt_id(struct metal_spi *spi) {
+    return __metal_driver_sifive_spi0_interrupt_line(spi);
+}
+
 int __metal_driver_sifive_spi0_set_baud_rate(struct metal_spi *gspi,
                                              int baud_rate) {
     long control_base = __metal_driver_sifive_spi0_control_base(gspi);
@@ -414,6 +425,9 @@ void __metal_driver_sifive_spi0_init(struct metal_spi *gspi, int baud_rate) {
 __METAL_DEFINE_VTABLE(__metal_driver_vtable_sifive_spi0) = {
     .spi.init = __metal_driver_sifive_spi0_init,
     .spi.transfer = __metal_driver_sifive_spi0_transfer,
+    .spi.controller_interrupt =
+        __metal_driver_sifive_spi0_interrupt_controller,
+    .spi.get_interrupt_id = __metal_driver_sifive_spi0_get_interrupt_id,
     .spi.get_baud_rate = __metal_driver_sifive_spi0_get_baud_rate,
     .spi.set_baud_rate = __metal_driver_sifive_spi0_set_baud_rate,
 };
