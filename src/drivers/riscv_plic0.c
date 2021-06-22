@@ -187,10 +187,15 @@ int __metal_driver_riscv_plic0_register(struct metal_interrupt *controller,
 int __metal_driver_riscv_plic0_enable(struct metal_interrupt *controller,
                                       int id) {
     struct __metal_driver_riscv_plic0 *plic = (void *)(controller);
+    struct metal_interrupt *intc;
+    struct __metal_driver_cpu *cpu = __metal_cpu_table[__metal_myhart_id()];
 
     if (id >= __metal_driver_sifive_plic0_num_interrupts(controller)) {
         return -1;
     }
+
+    intc = (struct __metal_driver_riscv_cpu_intc *)__metal_driver_cpu_interrupt_controller(cpu);
+    intc->vtable->interrupt_enable(intc, METAL_INTERRUPT_ID_EXT);
 
     __metal_plic0_enable(plic, __metal_myhart_id(), id, METAL_ENABLE);
     return 0;
@@ -199,10 +204,15 @@ int __metal_driver_riscv_plic0_enable(struct metal_interrupt *controller,
 int __metal_driver_riscv_plic0_disable(struct metal_interrupt *controller,
                                        int id) {
     struct __metal_driver_riscv_plic0 *plic = (void *)(controller);
+    struct metal_interrupt *intc;
+    struct __metal_driver_cpu *cpu = __metal_cpu_table[__metal_myhart_id()];
 
     if (id >= __metal_driver_sifive_plic0_num_interrupts(controller)) {
         return -1;
     }
+    intc = (struct __metal_driver_riscv_cpu_intc *)__metal_driver_cpu_interrupt_controller(cpu);
+    intc->vtable->interrupt_disable(intc, METAL_INTERRUPT_ID_EXT);
+
     __metal_plic0_enable(plic, __metal_myhart_id(), id, METAL_DISABLE);
     return 0;
 }

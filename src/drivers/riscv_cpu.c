@@ -466,21 +466,21 @@ void __metal_driver_riscv_cpu_controller_interrupt_init(
             intc->metal_exception_table[i] = __metal_default_exception_handler;
         }
 
-        /*
-         * Set the real trap handler if the value of mtvec is equal to
-         * early_trap_vector. If mtvec is not equal to early_trap_vector,
-         * that means user has own trap handler, then we don't overwrite it.
-         */
-        uintptr_t mtvec;
-        __asm__ volatile("csrr %0, mtvec" : "=r"(mtvec));
-        if (mtvec == (uintptr_t)&early_trap_vector) {
-            __metal_controller_interrupt_vector(
-                METAL_DIRECT_MODE,
-                (void *)(uintptr_t)&__metal_exception_handler);
-        }
         intc->init_done = 1;
     }
-}
+    /*
+     * Set the real trap handler if the value of mtvec is equal to
+     * early_trap_vector. If mtvec is not equal to early_trap_vector,
+     * that means user has own trap handler, then we don't overwrite it.
+     */
+    uintptr_t mtvec;
+    __asm__ volatile("csrr %0, mtvec" : "=r"(mtvec));
+    if (mtvec == (uintptr_t)&early_trap_vector) {
+        __metal_controller_interrupt_vector(
+            METAL_DIRECT_MODE,
+            (void *)(uintptr_t)&__metal_exception_handler);
+    }
+} 
 
 int __metal_driver_riscv_cpu_controller_interrupt_register(
     struct metal_interrupt *controller, int id, metal_interrupt_handler_t isr,
