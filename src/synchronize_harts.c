@@ -6,6 +6,10 @@
 #include <metal/machine.h>
 #include <metal/machine/platform.h>
 
+#if __METAL_DT_MAX_HARTS > 1
+extern uint32_t __metal_boot_hart;
+#endif
+
 #define METAL_REG(base, offset) (((unsigned long)(base) + (offset)))
 #define METAL_REGW(base, offset)                                               \
     (__METAL_ACCESS_ONCE((__metal_io_u32 *)METAL_REG((base), (offset))))
@@ -41,23 +45,25 @@ __attribute__((section(".init"))) void __metal_synchronize_harts() {
     /* Disable machine interrupts as a precaution */
     __asm__ volatile("csrc mstatus, %0" ::"r"(METAL_MSTATUS_MIE));
 
-    if (hart == 0) {
-        /* Hart 0 waits for all harts to set their MSIP bit */
-        for (int i = 1; i < __METAL_DT_MAX_HARTS; i++) {
-            while (METAL_MSIP(msip_base, i) == 0)
-                ;
+    if (hart == (int)&__metal_boot_hart) {
+        /* Hart __metal_boot_hart waits for all harts to set their MSIP bit */
+        for (int i = 0; i < __METAL_DT_MAX_HARTS; i++) {
+            if (i != (int)&__metal_boot_hart)
+                while (METAL_MSIP(msip_base, i) == 0)
+                    ;
         }
 
-        /* Hart 0 clears everyone's MSIP bit */
-        for (int i = 1; i < __METAL_DT_MAX_HARTS; i++) {
-            METAL_MSIP(msip_base, i) = 0;
+        /* Hart __metal_boot_hart clears everyone's MSIP bit */
+        for (int i = 0; i < __METAL_DT_MAX_HARTS; i++) {
+            if (i != (int)&__metal_boot_hart)
+                METAL_MSIP(msip_base, i) = 0;
         }
     } else {
         /* Other harts set their MSIP bit to indicate they're ready */
         METAL_MSIP(msip_base, hart) = 1;
         __asm__ volatile("fence w,rw");
 
-        /* Wait for hart 0 to clear the MSIP bit */
+        /* Wait for hart __metal_boot_hart to clear the MSIP bit */
         while (METAL_MSIP(msip_base, hart) == 1)
             ;
     }

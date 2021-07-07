@@ -215,8 +215,8 @@ _start:
 
 _skip_init:
 
-  /* Synchronize harts so that secondary harts wait until hart 0 finishes
-     initializing */
+  /* Synchronize harts so that secondary harts wait until hart __metal_boot_hart 
+     finishes initializing */
   call __metal_synchronize_harts
 
   /* Disable and clear all interrupt sources */
