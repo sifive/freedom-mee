@@ -23,10 +23,10 @@ _enter:
 .option norelax
 #ifdef __riscv_cmodel_compact
 1:
-    auipc a0, %pcrel_hi(__global_pointer__)
-    addi a0, a0, %pcrel_lo(1b)
-    ld   gp, 0(a0)
-    add  gp, gp, a0
+    auipc t0, %pcrel_hi(__global_pointer__)
+    addi t0, t0, %pcrel_lo(1b)
+    ld   gp, 0(t0)
+    add  gp, gp, t0
 #else
     la gp, __global_pointer$
 #endif

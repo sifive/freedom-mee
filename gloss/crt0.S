@@ -43,10 +43,10 @@ _start:
 .option norelax
 #ifdef __riscv_cmodel_compact
 1:
-  auipc a0, %pcrel_hi(__global_pointer__)
-  addi a0, a0, %pcrel_lo(1b)
-  ld   gp, 0(a0)
-  add  gp, gp, a0
+  auipc t0, %pcrel_hi(__global_pointer__)
+  addi t0, t0, %pcrel_lo(1b)
+  ld   gp, 0(t0)
+  add  gp, gp, t0
 #else
   la gp, __global_pointer$
 #endif
@@ -66,7 +66,24 @@ _start:
    * is not necessary then it must simply set metal_segment_data_source_start to
    * be equal to metal_segment_data_target_start. */
 #ifdef __riscv_cmodel_compact
-  la.got.gprel t0, metal_segment_data_source_start
+  /* When rodata is placed nearly to text, then we can use la to access
+   * metal_segment_data_source_start directly; When the Rodata is placed
+   * nearly to rwdata, then use the lla.gprel is more suitable.  But once
+   * the rodata is far away from both text and rwdata, then generally we
+   * should use la.got.gprel to access it. Unfortunately, la.got.gprel
+   * cannot work for metal_segment_data_source_start, if LMA and VMA are
+   * different in the linker script.  Since we need to move the data,
+   * including GOT sections, from the LMA to VMA, then we can get the right
+   * values of got entries.  Therefore, use la.got.gprel to access the
+   * metal_segment_data_source_start will get the uninitilaize value.
+   * One of the solution is that - use compact stub to access the
+   * metal_segment_data_source_start, just like what we did above, to
+   * initialize gp.  */
+  1:
+  auipc t1, %pcrel_hi(__metal_segment_data_source_start__)
+  addi t1, t1, %pcrel_lo(1b)
+  ld   t0, 0(t1)
+  add  t0, t0, t1
   lla.gprel t1, metal_segment_data_target_start
   lla.gprel t2, metal_segment_data_target_end
 #else
@@ -341,11 +358,18 @@ name:
 .asciz "libgloss"
 
 #ifdef __riscv_cmodel_compact
-/* Compact stub.  */
+/* Compact stubs.  */
   .section .text.__global_pointer__, "aMG",@progbits, 8, __global_pointer__, comdat
   .align 3
   .global __global_pointer__
   .type   __global_pointer__, object
 __global_pointer__:
-  .quad   __global_pointer$ -.
+  .quad   __global_pointer$ - .
+
+  .section .text.__metal_segment_data_source_start__, "aMG",@progbits, 8, __metal_segment_data_source_start__, comdat
+  .align 3
+  .global __metal_segment_data_source_start__
+  .type   __metal_segment_data_source_start__, object
+__metal_segment_data_source_start__:
+  .quad   metal_segment_data_source_start - .
 #endif
