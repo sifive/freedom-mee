@@ -33,7 +33,9 @@ long __metal_driver_sifive_fe310_g000_lfrosc_get_rate_hz(
     unsigned long int mux_reg =
         __metal_driver_sifive_fe310_g000_lfrosc_mux_reg(clock);
 
-    if (LFROSC_REGW(mux_reg) & METAL_LFCLKMUX_EXT_MUX_STATUS) {
+    if ((mux_reg != 0) &&
+        (!(LFROSC_REGW(mux_reg) & METAL_LFCLKMUX_EXT_MUX_STATUS) ||
+         (LFROSC_REGW(mux_reg) & METAL_LFCLKMUX_SEL))) {
         return metal_clock_get_rate_hz(external_ref);
     }
 
